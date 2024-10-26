@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="/window_manager_library/window_inside_common.css">
+		<link rel="stylesheet" id="window_style" href="/window_manager_library/window_inside_98.css">
+		<style>
+			#assembler_source_input {
+				padding: 0 0;
+				margin: 0 0;
+				outline: none;
+				border: 1px solid #888;
+				width: 100%;
+				text-wrap: nowrap;
+			}
+			#right_pane {
+				padding: 0 0;
+				margin: 0 0;
+				border: 1px solid #888;
+				height: 100%;
+				display: flex;
+				flex-direction: column;
+			}
+			#assembled_bytes_text {
+				margin: 2px 2px;
+				border: 1px solid #888;
+				user-select: text;
+				overflow: auto;
+				flex-grow: 1;
+			}
+			#assembler_log_text {
+				margin: 2px 2px;
+				border: 1px solid #888;
+				user-select: text;
+				overflow: auto;
+				height: 150px;
+			}
+		</style>
+		<title>Assembler</title>
+	</head>
+	<body>
+		<div class="window-content-flex p8">
+			<div class="menu-bar">
+				<div class="menu-row">
+					<div class="menu-container">
+						<div class="menu-category">File</div>
+						<div class="menu-sub hidden">
+							<label class="menu-item">Open source file...<input type="file" id="open_source_file" style="display: none;" onchange="open_source_file_onchange()"></label>
+							<a class="menu-item" onclick="new_source_file_onclick()">New source file...</a>
+							<div class="menu-spacer"></div>
+							<a class="menu-item" onclick="save_source_file_onclick()">Save source file...</a>
+							<a class="menu-item" onclick="save_hex_dump_onclick()">Save hex dump...</a>
+							<div class="menu-spacer"></div>
+							<a class="menu-item" onclick="wm_client.close()">Exit</a>
+						</div>
+					</div>
+
+					<div class="menu-container">
+						<div class="menu-category">Edit</div>
+						<div class="menu-sub hidden">
+							<a class="menu-item" onclick="undo_onclick()">Undo</a>
+							<a class="menu-item" onclick="redo_onclick()">Redo</a>
+							<div class="menu-spacer"></div>
+							<a class="menu-item" onclick="cut_onclick()">Cut</a>
+							<a class="menu-item" onclick="copy_onclick()">Copy</a>
+							<a class="menu-item" onclick="paste_onclick()">Paste</a>
+							<div class="menu-spacer"></div>
+							<label class="menu-item">
+								<input type="checkbox" checked="" id="auto_update_checkbox" onchange="auto_update_checkbox_onchange()">Auto-update output
+							</label>
+							<a class="menu-item" onclick="assemble_onclick()">Assemble</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="splitview">
+				<textarea id="assembler_source_input" onchange="assembler_source_input_onchange()"></textarea>
+				<div id="right_pane">
+					<pre id="assembled_bytes_text"></pre>
+					<pre id="assembler_log_text">(log output)</pre>
+				</div>
+			</div>
+		</div>
+		<script src="/window_manager_library/WindowClient.js"></script>
+		<script src="MCPU_definitions.js"></script>
+		<script src="MCPUAssembler.js"></script>
+		<script>
+			// get control over this window
+			let wm_client = new WindowClient(window.parent)
+			wm_client.register_message_handler()
+			let assembler = new MCPUAssembler()
+			assembler.log = function() {
+				console.log(...arguments)
+				for (let i=0; i<arguments.length; i++) {
+					let str = String(arguments[i])
+					if (typeof(arguments[i]) == "object") { str = JSON.stringify(arguments[i]); }
+					if (str.length > 200) { str = str.substr(0, 200) + "(...)"; }
+					str = str.replaceAll(/[\n\r\t]/g, (v) => { return "\\" + v.charCodeAt(0).toString(8).padStart(3, "0"); })
+					window.assembler_log_text.innerText += str
+					window.assembler_log_text.innerText += "\t"
+				}
+				window.assembler_log_text.innerText += "\n"
+				window.assembler_log_text.scrollTop = window.assembler_log_text.scrollHeight
+			}
+
+			let auto_update_output = true
+
+			// format a hex value
+			let format_hex = (i, bits) => i.toString(16).padStart(Math.ceil(bits/4), "0")
+
+			// hex-dump the array
+			let hex_dump = (arr, nl_every=16, bits=8, highlight) => {
+				let dump = []
+				for (let i=0; i<arr.length; i++) {
+					let sep = " "
+					if (i==highlight) { sep="<" }
+					if (i==highlight-1) { sep=">" }
+					dump.push(format_hex(arr[i] || 0, bits) + sep + ((i%nl_every==nl_every-1) ? "\n" : "") )
+				}
+				return dump.join("")
+			}
+
+			// read a source file
+			let open_source_file_onchange = () => {
+				if (!confirm("Changes might be lost. Continue?")) { return; }
+				let reader = new FileReader()
+				reader.addEventListener("load", (event) => {
+					window.assembler_source_input.value = event.target.result
+					if (auto_update_output) { update_assembly_output(); }
+				})
+				reader.readAsBinaryString(window.open_source_file.files[0])
+			}
+
+			let save_file_as = (content, filename) => {
+				let a = document.createElement("a")
+				a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content)
+				a.download = filename
+				document.body.appendChild(a)
+				a.click()
+				document.body.removeChild(a)
+			}
+
+			let save_source_file_onclick = () => {
+				save_file_as(window.assembler_source_input.value, "output.asm")
+			}
+			let save_hex_dump_onclick = () => {
+				save_file_as(window.assembled_bytes_text.innerText, "output.hex")
+			}
+
+			let new_source_file_onclick = () => {
+				if (!confirm("Changes might be lost. Continue?")) { return; }
+				window.assembler_source_input.value = ""
+			}
+
+			// update the assembler output automatically if requested
+			let assembler_source_input_onchange = () => {
+				if (auto_update_output) { update_assembly_output(); }
+			}
+
+			// update the assembler output: Pre-process, tokenize, assemble, and link
+			let update_assembly_output = () => {
+				assembled_bytes_text.innerText = ""
+				window.assembler_log_text.innerText = ""
+				window.assembler_log_text.style.color = "unset"
+				//try {
+					let str = assembler_source_input.value
+					let pre_processed = assembler.preprocess_str(str)
+					let tokens = assembler.tokenize_str(pre_processed)
+					let assembled = assembler.assemble_tokens(tokens)
+					let linked = assembler.link_assembly(assembled)
+					let hex = hex_dump(linked.image, 16, 8)
+					assembled_bytes_text.innerText = hex
+				try {
+				} catch (e) {
+					window.assembler_log_text.style.color = "darkred"
+					window.assembler_log_text.innerText += e
+					window.assembler_log_text.innerText += "\n"
+					window.assembler_log_text.scrollTop = window.assembler_log_text.scrollHeight
+					console.error(e)
+				}
+			}
+
+			// edit actions 
+			let undo_onclick = () => document.execCommand("undo")
+			let redo_onclick = () => document.execCommand("redo")
+			let cut_onclick = () => document.execCommand("cut")
+			let copy_onclick = () => document.execCommand("copy")
+			let paste_onclick = () => document.execCommand("paste")
+			let assemble_onclick = () => update_assembly_output()
+			let auto_update_checkbox_onchange = () => auto_update_output = window.auto_update_checkbox.checked
+
+			// reset emulator and update UI on load
+			document.body.onload = () => {
+				wm_client.set_size(800, 400)
+			}
+
+		</script>
+	</body>
+</html>
+
+

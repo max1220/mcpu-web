@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Instruction_set</title>
+  <style>
+    html {
+      line-height: 1.5;
+      font-family: Georgia, serif;
+      font-size: 20px;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 1em;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
+      font-size: 85%;
+      margin: 0;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<h1 id="mcpu-instruction-set">MCPU instruction set</h1>
+<p>The MCPU instruction set is designed to be simple.</p>
+<p>There are only 2 things this instruction set is concerned with:
+Encoding immediate values and moving data between functions/registers on
+the <code>BUS</code>.</p>
+<p>The instruction set is has two instruction formats, the
+<code>IMM</code> format and the <code>MOV/CMOV</code> format.</p>
+<p>Moving data between functions/registers using
+<code>MOV</code>/<code>CMOV</code> is completely orthogonal: All sources
+can be combined with all targets.</p>
+<h2 id="imm-instruction">IMM instruction</h2>
+<table>
+<thead>
+<tr class="header">
+<th>128</th>
+<th>64</th>
+<th>32</th>
+<th>16</th>
+<th>8</th>
+<th>4</th>
+<th>2</th>
+<th>1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>IS_IMM(1)</td>
+<td>IMM7</td>
+<td>IMM7</td>
+<td>IMM7</td>
+<td>IMM7</td>
+<td>IMM7</td>
+<td>IMM7</td>
+<td>IMM7</td>
+</tr>
+</tbody>
+</table>
+<p>If the <code>IS_IMM</code> bit in the op-code is set, the instruction
+is an immediate value instruction. The lower bits encode a 7-bit
+immediate value(<code>IMM7</code>) that is loaded or shifted into the
+<code>SRG_IMM</code> shift register:</p>
+<p>When a <code>IMM</code> instruction is encountered without a
+preceding <code>IMM</code> instruction, the value is <em>loaded</em>
+into the <code>SRG_IMM</code>:<br> The upper bits are set to 0 and the
+lower bits set to <code>IMM7</code>.</p>
+<p>When an <code>IMM</code> instruction is encountered and the previous
+instruction was an <code>IMM</code> instruction the value is
+<em>shifted</em> in instead:<br> The value in <code>SRG_IMM</code> is
+left-shifted 7 bits and the lower 7 bits are set to
+<code>IMM7</code>.</p>
+<p>This way large or small immediate values can be reasonable
+efficiently encoded.</p>
+<h2 id="movcmov-instruction">MOV/CMOV instruction</h2>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 13%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>128</th>
+<th>64</th>
+<th>32</th>
+<th>16</th>
+<th>8</th>
+<th>4</th>
+<th>2</th>
+<th>1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>IS_IMM(0)</td>
+<td>IS_COND</td>
+<td>TARGET</td>
+<td>TARGET</td>
+<td>TARGET</td>
+<td>SOURCE</td>
+<td>SOURCE</td>
+<td>SOURCE</td>
+</tr>
+</tbody>
+</table>
+<p>If the <code>IS_IMM</code> bit is not set in the op-code then the
+instruction is an move
+operation(<code>MOV</code>/<code>CMOV</code>).</p>
+<p><code>MOV</code> instructions copy a value from a <code>SOURCE</code>
+to a <code>TARGET</code> via the <code>BUS</code>.</p>
+<p>If the <code>IS_COND</code> bit is set the instruction is
+conditional, and target is only written to if the ALU test output is
+true(conditional move, <code>CMOV</code>).</p>
+<p>The instruction <code>MOV PC PC</code> is used as a
+halt-instruction(forever runs the same instruction).</p>
+<h3 id="sources">Sources</h3>
+<p>Bits 0-2 in the op-code</p>
+<table>
+<thead>
+<tr class="header">
+<th>Bits</th>
+<th>I</th>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>000</td>
+<td>0</td>
+<td>PC</td>
+<td>Read Program counter</td>
+</tr>
+<tr class="even">
+<td>001</td>
+<td>1</td>
+<td>ADDR</td>
+<td>Read Address register</td>
+</tr>
+<tr class="odd">
+<td>010</td>
+<td>2</td>
+<td>RAM</td>
+<td>Read <code>RAM</code> at <code>REG_ADDR</code></td>
+</tr>
+<tr class="even">
+<td>011</td>
+<td>3</td>
+<td>IMM</td>
+<td>Read value in <code>SRG_IMM</code></td>
+</tr>
+<tr class="odd">
+<td>100</td>
+<td>4</td>
+<td>ALU</td>
+<td>Read ALU arithmeric result</td>
+</tr>
+<tr class="even">
+<td>101</td>
+<td>5</td>
+<td>I</td>
+<td>Read I</td>
+</tr>
+<tr class="odd">
+<td>110</td>
+<td>6</td>
+<td>J</td>
+<td>Read J</td>
+</tr>
+<tr class="even">
+<td>111</td>
+<td>7</td>
+<td>K</td>
+<td>Read K</td>
+</tr>
+</tbody>
+</table>
+<h3 id="targets">Targets</h3>
+<p>Bits 3-5 in the op-code</p>
+<table>
+<thead>
+<tr class="header">
+<th>Bits</th>
+<th>I</th>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>000</td>
+<td>0</td>
+<td>PC</td>
+<td>Write Program counter</td>
+</tr>
+<tr class="even">
+<td>001</td>
+<td>1</td>
+<td>ADDR</td>
+<td>Write Address register</td>
+</tr>
+<tr class="odd">
+<td>010</td>
+<td>2</td>
+<td>RAM</td>
+<td>Write <code>RAM</code> at <code>REG_ADDR</code></td>
+</tr>
+<tr class="even">
+<td>011</td>
+<td>3</td>
+<td>ALU_A</td>
+<td>Write ALU_A register</td>
+</tr>
+<tr class="odd">
+<td>100</td>
+<td>4</td>
+<td>ALU_B</td>
+<td>Write ALU_B register</td>
+</tr>
+<tr class="even">
+<td>101</td>
+<td>5</td>
+<td>I</td>
+<td>Write I</td>
+</tr>
+<tr class="odd">
+<td>110</td>
+<td>6</td>
+<td>J</td>
+<td>Write J</td>
+</tr>
+<tr class="even">
+<td>111</td>
+<td>7</td>
+<td>K</td>
+<td>Write K</td>
+</tr>
+</tbody>
+</table>
+<h1 id="examplepseudo-instructions">Example/Pseudo instructions</h1>
+<p>Here are some common instructions explained.</p>
+<h2 id="load-an-immediate-value-128">Load an immediate value &lt;
+128</h2>
+<p>Loading a small immediate value is easy, just add 128 to value to add
+the <code>IS_IMM</code> bit to the byte value.</p>
+<p>For example, loading the immediate value 42(<code>IMM 42</code> in
+miniasm) can be encoded using a byte value of 169(0xaa).</p>
+<h2 id="loading-an-immediate-value-128">Loading an immediate value &gt;=
+128</h2>
+<p>Loading a larger immediate value is performed by splitting the value
+into segments of 7 bits, and adding the <code>IS_IMM</code> bit.</p>
+<p>For example, to load this 32-bit binary number(27799284):</p>
+<pre><code>0b00000001101010000010111011110100</code></pre>
+<p>First split into 7-bit segments, from right to left:</p>
+<pre><code>0000000_0001101_0100000_1011101_1110100</code></pre>
+<p>Now, from left to right, starting with the first non-zero segment,
+add the <code>IS_IMM</code> bit to each segment to form the
+op-codes:</p>
+<pre><code>IS_IMM bit
+|
+v
+10001101 = 141(0x8d)
+ ^~~~~~&gt;
+ |
+ segment bits
+
+10100000 = 160 (0xa0)
+11011101 = 221 (0xdd)
+11110100 = 244 (0xf4)
+</code></pre>
+<p>So to the immediate value <code>27799284</code> is loaded by the
+instructions <code>8d</code> <code>a0</code> <code>dd</code>
+<code>f4</code>.</p>
+<h2 id="move-operations">Move operations</h2>
+<p>All non-immediate value instructions are move instructions in some
+way, and moves are completely orthogonal:</p>
+<p>Any value from a sources can be written to any target, and all
+operations move a value from a source to a target via the
+<code>BUS</code>.</p>
+<p>A move operation is encoded by the source index in the bits 0-2, and
+the target index in the bits 3-5.</p>
+<pre><code>op_code = source_index + target_index * 8</code></pre>
+<p>For example, to load the program counter from an immediate
+value(“jump”):</p>
+<pre><code>MOV IMM PC
+// source = 3(IMM)
+// target = 0(PC)
+// op_code = 0x03</code></pre>
+<h2 id="conditional-move">Conditional move</h2>
+<p>Any move operation can be turned into a conditional move by adding
+the <code>IS_COND</code> bit.</p>
+<p>If the <code>IS_COND</code> bit the target is only written to if the
+<code>ALU_TEST</code> output is set.</p>
+<p>Because of this you typically need to load a comparison operation
+into the <code>SRG_IMM</code> register for the ALU operation in the
+instruction before the conditional move. See <a href="#using-the-alu">#
+Using the ALU</a>.</p>
+<pre><code>op_code = 64 + source_index + target_index * 8</code></pre>
+<h2 id="using-the-alu">Using the ALU</h2>
+<p>To perform any useful computation the ALU is needed.</p>
+<p>The ALU has two internal registers, <code>ALU_A</code> and
+<code>ALU_B</code> that can be written from the <code>BUS</code>.</p>
+<p>The ALU operation is encoded in the <code>SRG_IMM</code> register
+when reading from the ALU as a source on the <code>BUS</code></p>
+<p>The <code>ALU_A</code> value is always used unmodified in the ALU
+operation, and the effective value of <code>ALU_B</code> in an
+operation(test/arithmetric) might be modified by part of the ALU
+operation: It can be used unmodified, replaced by the
+<code>SRG_IMM</code> value(without the leading 7 bits used as ALU
+operation), or the <code>ALU_B</code> value left or right shifted by
+1.</p>
+<p>Then the unmodified <code>ALU_A</code> and the possibly modified
+<code>ALU_B</code> values are used in the actual ALU test and arithmetic
+operation.</p>
+<p>When reading the ALU value on the <code>BUS</code>, the current
+<code>SRG_IMM</code> value is used as the ALU operation. The lower 7
+bits encode the ALU operation, and the upper bits can be used as an
+immediate value that replaces the <code>ALU_B</code> value(see
+above).</p>
+<p>The complete documentation for the ALU is <a
+href="ALU.md">ALU.md</a>.</p>
+<p>Here is an example that loads 0x2a and 0x50f into <code>ALU_A</code>
+and <code>ALU_B</code>, loads the <code>ADD</code> operataion, then
+stores the ALU result(0x539) in RAM at address 0x45.</p>
+<pre><code>IMM 0x2a
+MOV IMM ALU_A // load ALU_A value
+IMM 0x50f
+MOV IMM ALU_B // load ALU B value
+IMM 0x45
+MOV IMM ADDR // load addr for later storing the result in RAM
+IMM 0 // setup ALU add operation
+MOV ALU RAM // set RAM[ADDR=0x45] to ALU(0x2a ADD 0x50f)=0x539</code></pre>
+<h2 id="jumps">Jumps</h2>
+<p>Since the program counter can be written with a value from any
+source, jumps can easily be performed by moving the jump target
+addresses from immediate values, RAM, or the ALU.</p>
+<pre><code>IMM &lt;jump address&gt;
+MOV IMM PC</code></pre>
+<h2 id="branches">Branches</h2>
+<p>Branches work exactly like jumps, except that the
+<code>IS_COND</code> bit is set in the instruction.</p>
+<p>Because the ALU is needed to perform the comparison the
+<code>IMM</code> value can’t be directly used, and is temporarily stored
+in the <code>ADDR</code> register in this example:</p>
+<pre><code>// setting up ALU operands ALU_A and ALU_B omitted for brevity
+IMOV &lt;branch target address&gt; ADDR
+ALU &lt;alu comparison operation&gt;
+CMOV ADDR PC</code></pre>
+<h2 id="assembler-shortcuts">Assembler shortcuts</h2>
+<p>Not technically a part of the instruction set, but the miniasm
+assembler syntax supports some additional syntactic sugar to make
+writing assembly programs more efficient.</p>
+<p>For example, while the <code>IMM</code> instruction format supports
+only 7 bits, if it is immediately followed by other <code>IMM</code>
+instructions it obviously encodes a larger integer value which can
+directly be written as an that larger number.</p>
+<h3 id="imm">IMM</h3>
+<p>The <code>IMM</code> assembler instruction might generate more than
+one <code>IMM</code> bytecode instruction to encode a larger immediate
+value.</p>
+<pre><code>IMM &lt;large immediate value&gt; // turns to multiple IMM bytecode instructions</code></pre>
+<h3 id="imov">IMOV</h3>
+<p>There is also the <code>IMOV</code> assembler pseudo-instruction,
+whichs is just a shortcut to loading an immediate, then moving from the
+<code>IMM</code> source:</p>
+<pre><code>IMOV &lt;value&gt; &lt;target&gt;</code></pre>
+<pre><code>IMM &lt;value&gt;
+MOV IMM &lt;target&gt;</code></pre>
+<h3 id="alu">ALU</h3>
+<p>To load an ALU operation as an immediate value you can use the
+<code>ALU</code> pseudo-instruction which encodes the correct
+<code>IMM</code> instruction for the ALU operation:</p>
+<pre><code>ALU &lt;ALU operation&gt; &lt;b operation&gt; &lt;flags/immediate value&gt;</code></pre>
+<p>For details on the supported operations, see the ALU
+documentation.</p>
+</body>
+</html>

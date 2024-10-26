@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>MCPU emulator</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="description" content="MCPU Home page">
+		<meta name="author" content="Max Sahm">
+
+		<link rel="stylesheet" href="/window_manager_library/window_common.css">
+		<link id="window_style" rel="stylesheet" href="/window_manager_library/window_98.css">
+		<style>
+			body, html {
+				background-color: darkcyan;
+				color: #fff;
+				font-family: sans-serif;
+				user-select: none;
+			}
+			main {
+				max-width: 1000px;
+				margin: 0 auto;
+				padding: 1em 1em;
+				background-color: darkslategrey;
+				border: 1px solid #888;
+			}
+		</style>
+	</head>
+	<body>
+		<!-- Container for the moveable windows(managed by javascript) -->
+		<div id="window_container"></div>
+
+		<!-- The page content -->
+		<main>
+			<h1>MCPU</h1>
+			<br>
+			<p>
+				Welcome to the homepage of the MCPU.
+			</p>
+			<p>
+				<button onclick="wm.add_window('emulator.html')">Emulator</button>
+				<button onclick="wm.add_window('assembler.html')">Assembler</button>
+
+				<button onclick="wm.add_window('doc/html/ALU.html')">ALU.html</button>
+				<button onclick="wm.add_window('doc/html/Instruction_set.html')">Instruction_set.html</button>
+			</p>
+		</main>
+
+		<!-- Window template instanced by Javascript -->
+		<template id="window_template">
+			<div class="win" style="width: 400px; height: 400px;">
+				<nav class="win-titlebar win-drag-handle">
+					<span class="win-icon">🗔</span>
+					<span class="win-title win-drag-handle">Unnamed window</span>
+					<button class="win-btn win-btn-minimize" onclick="wm.minimize_window(this.closest('.win'))" title="Minimize">▁</button>
+					<button class="win-btn win-btn-restore hidden" onclick="wm.restore_window(this.closest('.win'))" title="Restore">🗗</button>
+					<button class="win-btn win-btn-maximize" onclick="wm.maximize_window(this.closest('.win'))" title="Maximize">🗖</button>
+					<button class="win-btn win-btn-close" onclick="wm.remove_window(this.closest('.win'))" title="Close">🞮</button>
+				</nav>
+				<iframe class="win-iframe"></iframe>
+				<div class="win-resize-handle"></div>
+			</div>
+		</template>
+
+		<script src="/window_manager_library/WindowManager.js"></script>
+		<script>
+			// create a window manager
+			var wm = new WindowManager(window.window_container, window.window_template, false)
+			wm.register_mouse_events(window)
+			wm.register_message_events()
+			wm.resize_size_limits.min_w = 350
+			wm.create_size_limits.min_w = 500
+
+			wm.add_window("emulator.html")
+			wm.add_window("assembler.html")
+		</script>
+	</body>
+</html>
+
+

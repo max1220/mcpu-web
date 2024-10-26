@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="/window_manager_library/window_inside_common.css">
+		<link rel="stylesheet" id="window_style" href="/window_manager_library/window_inside_98.css">
+		<style>
+			.window-content {
+				display: flex;
+				flex-direction: column;
+			}
+			main {
+				flex-grow: 1;
+			}
+			#state_text {
+				font-weight: bold;
+			}
+			.registers dl dt {
+				font-weight: bold;
+			}
+			.registers input {
+				font-family: monospace;
+				font-size: 11px;
+				border: 1px solid #888;
+				border-radius: 0;
+				outline: none;
+				padding: 1px 1px;
+				margin: 0 0;
+			}
+			.registers label {
+				display: flex;
+				margin: 2px 2px;
+				align-items: center;
+			}
+			.registers label span {
+				min-width: 100px;
+			}
+			
+			#irom_panel,#dram_panel,#serial_panel {
+				display: flex;
+				flex-direction: column;
+				height: 100%;
+			}
+			#irom_input,#dram_input,#serial_text {
+				border: 1px solid #888;
+				background-color: #fff;
+				flex-grow: 1;
+				overflow: auto;
+				outline: none;
+				margin: 1px 1px;
+				resize: none;
+			}
+			#irom_input:focus,#irom_input:active,#dram_input:focus,#dram_input:active {
+				border: 2px solid #ff0;
+				margin: 0 0;
+			}
+
+			#serial_panel label {
+				display: flex;
+				align-items: baseline;
+			}
+			#serial_panel input {
+				flex-grow: 1;
+			}
+		</style>
+		<title>Emulator instance</title>
+	</head>
+	<body>
+		<div class="window-content-flex p8">
+			<div class="p8">
+				<p>
+					Use the controls below to control this MCPU emulator instance.<br>
+					<br>
+					State: <span id="state_text">Reset</span>
+				</p>
+				<button class="btn" id="start_stop_btn" onclick="start_stop_btn_onclick()">Start</button>
+				<button class="btn" id="step_btn" onclick="step_btn_onclick()">Step</button>
+				<button class="btn" onclick="reset_btn_onclick()">Reset</button>
+			</div>
+			<main class="tabs m4">
+				<menu role="tablist" aria-label="Emulator tabs">
+					<button role="tab" aria-controls="tab-panel-state" aria-selected="true" id="tab-btn-state" data-tabgroup="emulator-tabs" onclick="tab_onclick(event)">State</button>
+					<button role="tab" aria-controls="tab-panel-irom" id="tab-btn-irom" data-tabgroup="emulator-tabs" onclick="tab_onclick(event)">IROM</button>
+					<button role="tab" aria-controls="tab-panel-dram" id="tab-btn-dram" data-tabgroup="emulator-tabs" onclick="tab_onclick(event)">DRAM</button>
+					<button role="tab" aria-controls="tab-panel-serial" id="tab-btn-serial" data-tabgroup="emulator-tabs" onclick="tab_onclick(event)">Serial</button>
+				</menu>
+				<div role="tabpanel" aria-labelledby="tab-btn-state" id="tab-panel-state" data-tabgroup="emulator-tabs">
+					<div class="registers">
+						<label><span>CNT_PC:</span><input type="text" id="CNT_PC_input" onchange="CNT_PC_input_onchange()"></label>
+						<label><span>SRG_IMM:</span><input type="text" id="SRG_IMM_input" onchange="SRG_IMM_input_onchange()"></label>
+						<label><span>REG_ADDR:</span><input type="text" id="REG_ADDR_input" onchange="REG_ADDR_input_onchange()"></label>
+						<label><span>ALU_A:</span><input type="text" id="ALU_A_input" onchange="ALU_A_input_onchange()"></label>
+						<label><span>ALU_B:</span><input type="text" id="ALU_B_input" onchange="ALU_B_input_onchange()"></label>
+						<label><span>REG_I:</span><input type="text" id="REG_I_input" onchange="REG_I_input_onchange()"></label>
+						<label><span>REG_J:</span><input type="text" id="REG_J_input" onchange="REG_J_input_onchange()"></label>
+						<label><span>REG_K:</span><input type="text" id="REG_K_input" onchange="REG_K_input_onchange()"></label>
+						<label><span>FLAG_LASTIMM:</span><input type="checkbox" id="FLAG_LASTIMM_input" onchange="FLAG_LASTIMM_input_onchange()"></label>
+					</div>
+				</div>
+				<div role="tabpanel" aria-labelledby="tab-btn-irom" id="tab-panel-irom" data-tabgroup="emulator-tabs" hidden>
+					<div id="irom_panel">
+						<textarea id="irom_input" onchange="irom_input_onchange()"></textarea>
+						<label>
+							<span>Load ROM image:</span>
+							<input type="file" id="irom_file_input" onchange="irom_file_input_onchange()">
+						</label>
+					</div>
+				</div>
+				<div role="tabpanel" aria-labelledby="tab-btn-dram" id="tab-panel-dram" data-tabgroup="emulator-tabs" hidden>
+					<div id="dram_panel">
+						<textarea id="dram_input" onchange="dram_input_onchange()"></textarea>
+					</div>
+				</div>
+				<div role="tabpanel" aria-labelledby="tab-btn-serial" id="tab-panel-serial" data-tabgroup="emulator-tabs" hidden>
+					<div id="serial_panel">
+						<pre id="serial_text"></pre>
+						<label class="form">
+							<span>Serial:</span>
+							<input type="text" id="serial_input">
+							<button class="btn" onclick="serial_send_onclick()">Send</button>
+						</label>
+					</div>
+				</div>
+			</main>
+		</div>
+		<script src="/window_manager_library/tab_onclick.js"></script>
+		<script src="/window_manager_library/WindowClient.js"></script>
+		<script src="MCPU_definitions.js"></script>
+		<script src="MCPUEmulator.js"></script>
+		<script>
+			// get control over this window
+			let wm_client = new WindowClient(window.parent)
+			wm_client.register_message_handler()
+
+			let cpu = new MCPUEmulator(256*256-1,256*256-1)
+			let running = false
+
+			// format a hex value
+			let format_hex = (i, bits) => i.toString(16).padStart(Math.ceil(bits/4), "0")
+
+			// hex-dump the array
+			let hex_dump = (arr, nl_every=16, bits=8, highlight) => {
+				let dump = []
+				for (let i=0; i<arr.length; i++) {
+					let sep = " "
+					if (i==highlight) { sep="<" }
+					if (i==highlight-1) { sep=">" }
+					dump.push(format_hex(arr[i], bits) + sep + ((i%nl_every==nl_every-1) ? "\n" : "") )
+				}
+				return dump.join("")
+			}
+
+			// run CPU instructions as long as the CPU is not halted
+			// TODO: run more than 60 instructions per second(lol)
+			let animation_frame_loop = () => {
+				if (!running) { return; }
+				cpu.step()
+				if (cpu.halted) {
+					running = false
+					window.start_stop_btn.innerText = "Start"
+					window.state_text.innerText = "Halted(HALT instruction)";
+				}
+				update_register_ui()
+				update_irom_ui()
+				update_dram_ui()
+				requestAnimationFrame(animation_frame_loop)
+			}
+
+			// start the CPU update loop
+			let start_cpu = () => {
+				running = true
+				cpu.halted = false
+				window.state_text.innerText = "Running..."
+				window.start_stop_btn.innerText = "Stop"
+				requestAnimationFrame(animation_frame_loop)
+			}
+			// manually stop the update loop
+			let stop_cpu = () => {
+				running = false
+				window.state_text.innerText = "Stopped(stop button)"
+				window.start_stop_btn.innerText = "Start"
+				update_register_ui()
+				update_irom_ui()
+				update_dram_ui()
+			}
+
+			// update CPU state when inputs are changed by user
+			let CNT_PC_input_onchange = () => { cpu.CNT_PC = parseInt(window.CNT_PC_input.value); update_register_ui(); update_irom_ui(); }
+			let SRG_IMM_input_onchange = () => { cpu.SRG_IMM = parseInt(window.SRG_IMM_input.value); update_register_ui(); }
+			let REG_ADDR_input_onchange = () => { cpu.REG_ADDR = parseInt(window.REG_ADDR_input.value); update_register_ui(); update_dram_ui(); }
+			let ALU_A_input_onchange = () => { cpu.ALU_A = parseInt(window.ALU_A_input.value); update_register_ui(); }
+			let ALU_B_input_onchange = () => { cpu.ALU_B = parseInt(window.ALU_B_input.value); update_register_ui(); }
+			let REG_I_input_onchange = () => { cpu.REG_I = parseInt(window.REG_I_input.value); update_register_ui(); }
+			let REG_J_input_onchange = () => { cpu.REG_J = parseInt(window.REG_J_input.value); update_register_ui(); }
+			let REG_K_input_onchange = () => { cpu.REG_K = parseInt(window.REG_K_input.value); update_register_ui(); }
+			let FLAG_LASTIMM_input_onchange = () => { cpu.FLAG_LASTIMM = FLAG_LASTIMM_input.checked; update_register_ui(); }
+
+			// update register UI state
+			let update_register_ui = () => {
+				CNT_PC_input.value = "0x" + format_hex(cpu.CNT_PC, MCPU_data_bits)
+				SRG_IMM_input.value = "0x" + format_hex(cpu.SRG_IMM, MCPU_data_bits)
+				REG_ADDR_input.value = "0x" + format_hex(cpu.REG_ADDR, MCPU_data_bits)
+				ALU_A_input.value = "0x" + format_hex(cpu.ALU_A, MCPU_data_bits)
+				ALU_B_input.value = "0x" + format_hex(cpu.ALU_B, MCPU_data_bits)
+				REG_I_input.value = "0x" + format_hex(cpu.REG_I, MCPU_data_bits)
+				REG_J_input.value = "0x" + format_hex(cpu.REG_J, MCPU_data_bits)
+				REG_K_input.value = "0x" + format_hex(cpu.REG_K, MCPU_data_bits)
+				FLAG_LASTIMM_input.checked = cpu.FLAG_LASTIMM
+			}
+
+			// update the textarea for the irom
+			let update_irom_ui = () => window.irom_input.value = hex_dump(cpu.IROM, 16, 8, cpu.CNT_PC)
+			let update_dram_ui = () => window.dram_input.value = hex_dump(cpu.DRAM, 4, 32, cpu.REG_ADDR)
+			
+			// load DRAM image from an array and an offset
+			let load_dram = (arr, offset=0) => {
+				for (let i=0; i<arr.length; i++) { cpu.DRAM[i+offset] = arr[i]; }
+				update_dram_ui()
+			}
+
+			// load IROM image from an array and an offset
+			let load_irom = (arr, offset=0) => {
+				for (let i=0; i<arr.length; i++) { cpu.IROM[i+offset] = arr[i]; }
+				update_irom_ui()
+			}
+
+			// load IROM image from file input on changes
+			let irom_file_input_onchange = () => {
+				let reader = new FileReader()
+				reader.addEventListener("load", (event) => {
+					load_irom(new Uint8Array(event.target.result), 0)
+				})
+				reader.readAsArrayBuffer(window.irom_file_input.files[0])
+			}
+
+			// re-read IROM from input text on changes
+			let irom_input_onchange = () => {
+				let hex_bytes = irom_input.value.match(/([\da-fA-F]+)[\s<>]/g)
+				let bytes = new Uint8Array(hex_bytes.map(e => parseInt(e, 16)))
+				load_irom(bytes, 0)
+			}
+
+			// re-read DRAM from input text on changes
+			let dram_input_onchange = () => {
+				let hex_bytes = dram_input.value.match(/([\da-fA-F]+)[\s<>]/g)
+				let bytes = new Uint32Array(hex_bytes.map(e => parseInt(e, 16)))
+				load_dram(bytes, 0)
+			}
+
+			// start/stop the CPU emulator
+			let start_stop_btn_onclick = () => {
+				if (running) { stop_cpu(); }
+				else { start_cpu(); }
+			}
+
+			// single-step the CPU emulator
+			let step_btn_onclick = () => {
+				if (running) {
+					window.start_stop_btn.innerText = "Start"
+					running = false
+				}
+				window.state_text.innerText = "Single-step" + (cpu.halted ? "(halted)" : "")
+				cpu.step()
+				update_register_ui()
+				update_irom_ui()
+				update_dram_ui()
+			}
+
+			// reset the CPU emulator state
+			let reset_btn_onclick = () => {
+				window.state_text.innerText = "Reset"
+				window.start_stop_btn.innerText = "Start"
+				running = false
+				cpu.reset()
+				update_register_ui()
+				update_irom_ui()
+				update_dram_ui()
+			}
+
+			// TODO: Implement serial reading/writing
+			let serial_send_onclick = () => {
+				console.log("TODO")
+			}
+
+			// reset emulator and update UI on load
+			document.body.onload = () => {
+				wm_client.set_size(400, 400)
+				reset_btn_onclick()
+			}
+
+		</script>
+	</body>
+</html>
+
+

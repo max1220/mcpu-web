@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>MCPU emulator</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="MCPU instruction set emulator">
+	<meta name="author" content="Max Sahm">
+	<link rel="stylesheet" href="css/style.css">
+	<link rel="stylesheet" href="css/vars.css">
+</head>
+<body>
+	<div class="main flex-parent">
+		<div style="flex: 1;">
+			<h3>Control:</h3>
+			<div>
+				<button class="btn pad" id="btn_run" onclick="cb_btn_run()">🏃 Run</button>
+				<button class="btn pad hidden" id="btn_stop" onclick="cb_btn_stop()">🛑 Stop</button>
+				<button class="btn pad" id="btn_step" onclick="cb_btn_step()">☞ Step</button>
+				<button class="btn pad" id="btn_reset" onclick="cb_btn_reset()">↺ Reset</button>
+			</div>
+			<h3>Serial:</h3>
+			<pre class="serial_out pad_lg" id="serial_out"></pre>
+			<input type="text" class="serial_in pad_lg" id="serial_in">
+			<br>
+		</div>
+		<div style="flex: 1;">
+			<h3>Registers:</h3>
+			<table class="tbl pad_lg">
+				<thead>
+					<tr>
+						<td style="width: 0;">Register</td>
+						<td>Value</td>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>CNT_PC</td>
+						<td id="table_cnt_pc">?</td>
+					</tr>
+					<tr>
+						<td>SRG_IMM</td>
+						<td id="table_srg_imm">?</td>
+					</tr>
+					<tr>
+						<td>REG_ADDR</td>
+						<td id="table_reg_addr">?</td>
+					</tr>
+					<tr>
+						<td>ALU_A</td>
+						<td id="table_alu_a">?</td>
+					</tr>
+					<tr>
+						<td>ALU_B</td>
+						<td id="table_alu_b">?</td>
+					</tr>
+				</tbody>
+			</table>
+			<h3>DRAM:</h3>
+			<div class="memory_block pad_lg">
+				<div id="dram_text"></div>
+			</div>
+			<h3>IROM:</h3>
+			<input type="file" onchange="cb_irom_file_changed()">
+			<div class="memory_block pad_lg">
+				<div id="irom_text"></div>
+			</div>
+		</div>
+	</main>
+	<script type="text/javascript" src="emulator_lib.js"></script>
+	<script type="text/javascript" src="emulator.js"></script>
+</body>
+</html>
+
+

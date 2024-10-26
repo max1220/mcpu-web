@@ -1,0 +1,133 @@
+body, html {
+	font-family: var(--font-family);
+	font-size: var(--font-size);
+	line-height: var(--line-height);
+	background: var(--body-bg);
+	color: var(--body-fg);
+}
+
+/* --- Center main page content --- */
+.main {
+	padding: 40px 40px;
+	background: var(--main-bg);
+}
+.main a {
+	color: var(--link-color);
+	text-decoration-style: dotted;
+	text-decoration-thickness: 1px;
+	transition: color 0.4s;
+}
+.main a:hover {
+	color: var(--link-active-fg);
+}
+.main h1 {
+	font-size: 56px;
+}
+.main h2 {
+	font-size: 32px;
+}
+.main h3 {
+	font-size: 28px;
+}
+
+
+
+/* --- Buttons --- */
+.btn {
+	border: 3px solid var(--line-color);
+	border-radius: 7px;
+	outline: none;
+	background: var(--main-bg2);
+	color: var(--body-fg);
+	font-size: 22px;
+	transition: border 0.4s;
+}
+.btn:hover {
+	border: 3px solid var(--link-active-fg);
+	background: var(--main-bg3);
+}
+
+.pad_lg {
+	margin: 20px;
+	padding: 20px;
+}
+.pad {
+	margin: 20px;
+	padding: 10px;
+}
+
+.memory_block,.serial_out,.serial_in {
+	background-color: var(--main-bg2);
+	border: 2px solid var(--line-color);
+	font-family: 'Courier New', Courier, monospace;
+	font-size: 18px;
+}
+.serial_out {
+	height: 10em;
+	overflow: auto;
+}
+.serial_in {
+	transition: border 0.4s;
+	display: block;
+}
+.serial_in:active,.serial_in:hover,.serial_in:focus {
+	border: 2px solid var(--link-active-fg);
+	outline: none;
+}
+
+
+
+/* --- Tables --- */
+.tbl {
+	width: 100%;
+	border-collapse: collapse;
+}
+.tbl tr {
+	height: 30px;
+}
+.tbl thead tr {
+	border-bottom: 1px solid var(--line-color);
+}
+.tbl tbody {
+	font-family: monospace;
+	font-size: 16px;
+	background: var(--main-bg2);
+}
+.tbl tbody tr {
+	border-bottom: 1px solid var(--line-color);
+	transition: background-color 0.4s;
+}
+.tbl tbody tr:nth-child(even) {
+	background-color: rgba(0,0,0,0.2);
+}
+.tbl tbody tr:hover {
+	background-color: rgba(255,255,255,0.2);
+}
+.tbl tbody tr:last-child {
+	border-bottom: none;
+}
+.tbl tbody td {
+	border-right: 1px solid var(--line-color);
+	padding: 3px 10px ;
+}
+.tbl tbody td:last-child {
+	border-right: none;
+}
+
+
+
+/* --- responsive --- */
+@media screen and (min-width: 900px) {
+	.main {
+		margin: 0 auto;
+		max-width: 900px;
+		margin-top: 10px;
+	}
+	.flex-parent {
+		display: flex;
+	}
+}
+
+.hidden {
+	display: none;
+}

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ALU</title>
+  <style>
+    html {
+      line-height: 1.5;
+      font-family: Georgia, serif;
+      font-size: 20px;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 1em;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
+      font-size: 85%;
+      margin: 0;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<h1 id="alu">ALU</h1>
+<p>This page describes the ALU used by the MCPU.</p>
+<p>The ALU has two registers on the <code>BUS</code>, called
+<code>ALU_A</code> and <code>ALU_B</code>.</p>
+<p>The values from those registers are used by the ALU to calculate two
+values: The ALU Arithmetic result and the ALU test flag output.</p>
+<p>The ALU Arithmetic result can be read on the data bus, while the ALU
+test flag is used in conditional instructions.</p>
+<h2 id="alu-operations">ALU operations</h2>
+<table>
+<thead>
+<tr class="header">
+<th>64</th>
+<th>32</th>
+<th>16</th>
+<th>8</th>
+<th>4</th>
+<th>2</th>
+<th>1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>B_OP</td>
+<td>B_OP</td>
+<td>CIN</td>
+<td>NEG</td>
+<td>A_OP</td>
+<td>A_OP</td>
+<td>A_OP</td>
+</tr>
+</tbody>
+</table>
+<p>The ALU operation is selected by the lower 7 bits of the current
+immediate value(in <code>SRG_IMM</code>), and is split into multiple
+parts:</p>
+<p><code>A_OP</code> (bits 0-2) determines the arithmetic and test ALU
+operation(see table below).</p>
+<p><code>NEG</code> (bit 3) if set signals that the value in B should be
+negated after the B operation, but before the arithmetic and test
+operation, and that the <code>test</code> output should be negated.</p>
+<p><code>CIN</code> (bit 4) if set enables the carry input for the
+addition operation( ADD does A + B + 1).</p>
+<p><code>B_OP</code> (bits 5-6) determines the ALU operation performed
+on the <code>ALU_B</code> value before the arithmetic and test
+operation.</p>
+<h3 id="a_op">A_OP</h3>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: right;">bits</th>
+<th style="text-align: right;">Arithmetic</th>
+<th style="text-align: right;">Pseudo-code</th>
+<th style="text-align: left;">Test</th>
+<th style="text-align: right;">Pseudo-code</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">000</td>
+<td style="text-align: right;">ADD</td>
+<td style="text-align: right;">A + B</td>
+<td style="text-align: left;">A_EQ_Z</td>
+<td style="text-align: right;">A == 0</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">001</td>
+<td style="text-align: right;">AND</td>
+<td style="text-align: right;">A &amp; 0</td>
+<td style="text-align: left;">B_EQ_Z</td>
+<td style="text-align: right;">B == 0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">010</td>
+<td style="text-align: right;">OR</td>
+<td style="text-align: right;">A</td>
+<td style="text-align: left;">B</td>
+<td style="text-align: right;">A_GT_B</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">011</td>
+<td style="text-align: right;">XOR</td>
+<td style="text-align: right;">A ^ B</td>
+<td style="text-align: left;">A_EQ_B</td>
+<td style="text-align: right;">A == B</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">A</td>
+<td style="text-align: right;">A</td>
+<td style="text-align: left;">A_LT_B</td>
+<td style="text-align: right;">A &lt; B</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">101</td>
+<td style="text-align: right;">B</td>
+<td style="text-align: right;">B</td>
+<td style="text-align: left;">B_LO</td>
+<td style="text-align: right;">B[0]</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">110</td>
+<td style="text-align: right;">X*</td>
+<td style="text-align: right;">X*</td>
+<td style="text-align: left;">B_HI</td>
+<td style="text-align: right;">B[31]</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">111</td>
+<td style="text-align: right;">Y*</td>
+<td style="text-align: right;">Y*</td>
+<td style="text-align: left;">SENSE</td>
+<td style="text-align: right;">sense*</td>
+</tr>
+</tbody>
+</table>
+<p>( * <code>X</code>,<code>Y</code> and <code>sense</code> are just
+external inputs to the ALU )</p>
+<h3 id="b_op">B_OP</h3>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: right;">bits</th>
+<th>Pseudo-code</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">00</td>
+<td>B</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">01</td>
+<td>ALU_IMM*</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">10</td>
+<td>B &lt;&lt; 1</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">11</td>
+<td>B &gt;&gt; 1</td>
+</tr>
+</tbody>
+</table>
+<p>( * <code>ALU_IMM</code> refers to the bits not included in the ALU
+operation, bits 7-* )</p>
+</body>
+</html>

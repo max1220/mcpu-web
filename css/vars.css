@@ -1,0 +1,18 @@
+:root {
+	--body-bg: #000000;
+	--body-fg: #f3f3f3;
+
+	/* Default font setup */
+	--font-family: sans-serif;
+	--font-size: 14pt;
+	--line-height: 1.333333;
+
+	/* Main content styling */
+	--main-bg: #181818;
+	--main-bg2: #2c2c2c;
+	--main-bg3: #696969;
+
+	--link-color: #bdbdbd;
+	--link-active-fg: #55f;
+	--line-color: #414141;
+}
