@@ -3,8 +3,8 @@ function MCPUEmulator(irom_size, dram_size) {
 	this.CNT_PC = 0
 	this.SRG_IMM = 0
 	this.REG_ADDR = 0
-	this.ALU_A = 0
-	this.ALU_B = 0
+	this.REG_ALU_A = 0
+	this.REG_ALU_B = 0
 	this.REG_I = 0
 	this.REG_J = 0
 	this.REG_K = 0
@@ -25,8 +25,8 @@ function MCPUEmulator(irom_size, dram_size) {
 		this.CNT_PC = 0
 		this.SRG_IMM = 0
 		this.REG_ADDR = 0
-		this.ALU_A = 0
-		this.ALU_B = 0
+		this.REG_ALU_A = 0
+		this.REG_ALU_B = 0
 		this.REG_I = 0
 		this.REG_J = 0
 		this.REG_K = 0
@@ -52,8 +52,8 @@ function MCPUEmulator(irom_size, dram_size) {
 		(val) => this.CNT_PC = val,
 		(val) => this.REG_ADDR = val,
 		(val) => this.DRAM[this.REG_ADDR] = val,
-		(val) => this.ALU_A = val,
-		(val) => this.ALU_B = val,
+		(val) => this.REG_ALU_A = val,
+		(val) => this.REG_ALU_B = val,
 		(val) => this.REG_I = val,
 		(val) => this.REG_J = val,
 		(val) => this.REG_K = val,
@@ -67,19 +67,19 @@ function MCPUEmulator(irom_size, dram_size) {
 	// calculate effective value of ALU B input(REG_ALU_B modified by ALU B operation)
 	this.alu_b = () => {
 		if ((this.SRG_IMM & 0x60) == 0x20) { return this.SRG_IMM >>> 7; }
-		else if ((this.SRG_IMM & 0x60) == 0x40) { return this.ALU_B >>> 1; }
-		else if ((this.SRG_IMM & 0x60) == 0x60) { return ((this.ALU_B << 1) & MCPU_data_mask) >>> 0; }
-		else { return this.ALU_B; }
+		else if ((this.SRG_IMM & 0x60) == 0x40) { return this.REG_ALU_B >>> 1; }
+		else if ((this.SRG_IMM & 0x60) == 0x60) { return ((this.REG_ALU_B << 1) & MCPU_data_mask) >>> 0; }
+		else { return this.REG_ALU_B; }
 	}
 
 	// get the boolean test output of the ALU
 	this.alu_test = () => {
 		let alu_op = this.SRG_IMM & 0x7
-		if (alu_op==0) { return this.ALU_A == 0; }
+		if (alu_op==0) { return this.REG_ALU_A == 0; }
 		else if (alu_op==1) { return this.alu_b() == 0; }
-		else if (alu_op==2) { return (this.ALU_A>>>0) > (this.alu_b()>>>0); }
-		else if (alu_op==3) { return (this.ALU_A>>>0) == (this.alu_b()>>>0); }
-		else if (alu_op==4) { return (this.ALU_A>>>0) < (this.alu_b()>>>0); }
+		else if (alu_op==2) { return (this.REG_ALU_A>>>0) > (this.alu_b()>>>0); }
+		else if (alu_op==3) { return (this.REG_ALU_A>>>0) == (this.alu_b()>>>0); }
+		else if (alu_op==4) { return (this.REG_ALU_A>>>0) < (this.alu_b()>>>0); }
 		else if (alu_op==5) { return (this.alu_b() & 1) !== 0; }
 		else if (alu_op==6) { return (this.alu_b() & MCPU_data_high) !== 0; }
 		else if (alu_op==7) { return this.alu_sense(); }
@@ -88,12 +88,11 @@ function MCPUEmulator(irom_size, dram_size) {
 	// get the data output(result) of the ALU
 	this.alu_res = function() {
 		let alu_op = this.SRG_IMM & 0x7
-		console.log("ALU", alu_op)
-		if (alu_op==0) { return (this.ALU_A + this.alu_b() + ((alu_op & 0x10)>>4)) & MCPU_data_mask; }
-		else if (alu_op==1) { return this.ALU_A & this.alu_b(); }
-		else if (alu_op==2) { return this.ALU_A | this.alu_b(); }
-		else if (alu_op==3) { return this.ALU_A ^ this.alu_b(); }
-		else if (alu_op==4) { return this.ALU_A; }
+		if (alu_op==0) { return (this.REG_ALU_A + this.alu_b() + ((alu_op & 0x10)>>4)) & MCPU_data_mask; }
+		else if (alu_op==1) { return this.REG_ALU_A & this.alu_b(); }
+		else if (alu_op==2) { return this.REG_ALU_A | this.alu_b(); }
+		else if (alu_op==3) { return this.REG_ALU_A ^ this.alu_b(); }
+		else if (alu_op==4) { return this.REG_ALU_A; }
 		else if (alu_op==5) { return this.alu_b(); }
 		else if (alu_op==6) { return this.alu_x(); }
 		else if (alu_op==7) { return this.alu_y(); }

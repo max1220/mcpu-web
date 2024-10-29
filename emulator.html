@@ -90,8 +90,8 @@
 						<label><span>CNT_PC:</span><input type="text" id="CNT_PC_input" onchange="CNT_PC_input_onchange()"></label>
 						<label><span>SRG_IMM:</span><input type="text" id="SRG_IMM_input" onchange="SRG_IMM_input_onchange()"></label>
 						<label><span>REG_ADDR:</span><input type="text" id="REG_ADDR_input" onchange="REG_ADDR_input_onchange()"></label>
-						<label><span>ALU_A:</span><input type="text" id="ALU_A_input" onchange="ALU_A_input_onchange()"></label>
-						<label><span>ALU_B:</span><input type="text" id="ALU_B_input" onchange="ALU_B_input_onchange()"></label>
+						<label><span>REG_ALU_A:</span><input type="text" id="REG_ALU_A_input" onchange="REG_ALU_A_input_onchange()"></label>
+						<label><span>REG_ALU_B:</span><input type="text" id="REG_ALU_B_input" onchange="REG_ALU_B_input_onchange()"></label>
 						<label><span>REG_I:</span><input type="text" id="REG_I_input" onchange="REG_I_input_onchange()"></label>
 						<label><span>REG_J:</span><input type="text" id="REG_J_input" onchange="REG_J_input_onchange()"></label>
 						<label><span>REG_K:</span><input type="text" id="REG_K_input" onchange="REG_K_input_onchange()"></label>
@@ -135,6 +135,11 @@
 
 			let cpu = new MCPUEmulator(256*256-1,256*256-1)
 			let running = false
+
+			// parse search string arguments
+			let search_args = {}
+			let search_args_arr = document.location.search.substr(1).split("&").map(e => e.split("=")).map(e => [ decodeURIComponent(e[0]), decodeURIComponent(e[1]) ])
+			search_args_arr.forEach(e => search_args[e[0]] = e[1])
 
 			// format a hex value
 			let format_hex = (i, bits) => i.toString(16).padStart(Math.ceil(bits/4), "0")
@@ -189,8 +194,8 @@
 			let CNT_PC_input_onchange = () => { cpu.CNT_PC = parseInt(window.CNT_PC_input.value); update_register_ui(); update_irom_ui(); }
 			let SRG_IMM_input_onchange = () => { cpu.SRG_IMM = parseInt(window.SRG_IMM_input.value); update_register_ui(); }
 			let REG_ADDR_input_onchange = () => { cpu.REG_ADDR = parseInt(window.REG_ADDR_input.value); update_register_ui(); update_dram_ui(); }
-			let ALU_A_input_onchange = () => { cpu.ALU_A = parseInt(window.ALU_A_input.value); update_register_ui(); }
-			let ALU_B_input_onchange = () => { cpu.ALU_B = parseInt(window.ALU_B_input.value); update_register_ui(); }
+			let REG_ALU_A_input_onchange = () => { cpu.REG_ALU_A = parseInt(window.REG_ALU_A_input.value); update_register_ui(); }
+			let REG_ALU_B_input_onchange = () => { cpu.REG_ALU_B = parseInt(window.REG_ALU_B_input.value); update_register_ui(); }
 			let REG_I_input_onchange = () => { cpu.REG_I = parseInt(window.REG_I_input.value); update_register_ui(); }
 			let REG_J_input_onchange = () => { cpu.REG_J = parseInt(window.REG_J_input.value); update_register_ui(); }
 			let REG_K_input_onchange = () => { cpu.REG_K = parseInt(window.REG_K_input.value); update_register_ui(); }
@@ -201,8 +206,8 @@
 				CNT_PC_input.value = "0x" + format_hex(cpu.CNT_PC, MCPU_data_bits)
 				SRG_IMM_input.value = "0x" + format_hex(cpu.SRG_IMM, MCPU_data_bits)
 				REG_ADDR_input.value = "0x" + format_hex(cpu.REG_ADDR, MCPU_data_bits)
-				ALU_A_input.value = "0x" + format_hex(cpu.ALU_A, MCPU_data_bits)
-				ALU_B_input.value = "0x" + format_hex(cpu.ALU_B, MCPU_data_bits)
+				REG_ALU_A_input.value = "0x" + format_hex(cpu.REG_ALU_A, MCPU_data_bits)
+				REG_ALU_B_input.value = "0x" + format_hex(cpu.REG_ALU_B, MCPU_data_bits)
 				REG_I_input.value = "0x" + format_hex(cpu.REG_I, MCPU_data_bits)
 				REG_J_input.value = "0x" + format_hex(cpu.REG_J, MCPU_data_bits)
 				REG_K_input.value = "0x" + format_hex(cpu.REG_K, MCPU_data_bits)
@@ -287,6 +292,25 @@
 			document.body.onload = () => {
 				wm_client.set_size(400, 400)
 				reset_btn_onclick()
+				if (search_args.load_hex_dump) {
+					let hex_bytes = search_args.load_hex_dump.match(/([\da-fA-F]+)[\s<>]/g)
+					let bytes = new Uint8Array(hex_bytes.map(e => parseInt(e, 16)))
+					load_irom(bytes, 0)
+				}
+				if (search_args.reset) { cpu.reset(); }
+
+				if (search_args.CNT_PC) { cpu.CNT_PC = parseInt(search_args.CNT_PC) & MCPU_data_mask; }
+				if (search_args.SRG_IMM) { cpu.SRG_IMM = parseInt(search_args.SRG_IMM) & MCPU_data_mask; }
+				if (search_args.REG_ADDR) { cpu.REG_ADDR = parseInt(search_args.REG_ADDR) & MCPU_data_mask; }
+				if (search_args.REG_ALU_A) { cpu.REG_ALU_A = parseInt(search_args.REG_ALU_A) & MCPU_data_mask; }
+				if (search_args.REG_ALU_B) { cpu.REG_ALU_B = parseInt(search_args.REG_ALU_B) & MCPU_data_mask; }
+				if (search_args.REG_I) { cpu.REG_I = parseInt(search_args.REG_I) & MCPU_data_mask; }
+				if (search_args.REG_J) { cpu.REG_J = parseInt(search_args.REG_J) & MCPU_data_mask; }
+				if (search_args.REG_K) { cpu.REG_K = parseInt(search_args.REG_K) & MCPU_data_mask; }
+				if (search_args.FLAG_LASTIMM) { cpu.FLAG_LASTIMM = search_args.FLAG_LASTIMM == "true"; }
+
+				if (search_args.start) { start_cpu(); }
+
 			}
 
 		</script>

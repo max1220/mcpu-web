@@ -55,7 +55,6 @@
 							<a class="menu-item" onclick="wm_client.close()">Exit</a>
 						</div>
 					</div>
-
 					<div class="menu-container">
 						<div class="menu-category">Edit</div>
 						<div class="menu-sub hidden">
@@ -72,11 +71,20 @@
 							<a class="menu-item" onclick="assemble_onclick()">Assemble</a>
 						</div>
 					</div>
+					<div class="menu-container">
+						<div class="menu-category">Examples</div>
+						<div class="menu-sub hidden">
+							<a class="menu-item" onclick="open_example('asm/add.asm')">asm/add.asm</a>
+							<a class="menu-item" onclick="open_example('asm/control_flow.asm')">asm/control_flow.asm</a>
+							<a class="menu-item" onclick="open_example('asm/labels_locations_references.asm')">asm/labels_locations_references.asm</a>
+						</div>
+					</div>
 				</div>
 			</div>
 			<div class="splitview">
 				<textarea id="assembler_source_input" onchange="assembler_source_input_onchange()"></textarea>
 				<div id="right_pane">
+					<div class="p2"><button class="btn" onclick="open_in_emulator_onclick()">Open in emulator...</button></div>
 					<pre id="assembled_bytes_text"></pre>
 					<pre id="assembler_log_text">(log output)</pre>
 				</div>
@@ -90,6 +98,16 @@
 			let wm_client = new WindowClient(window.parent)
 			wm_client.register_message_handler()
 			let assembler = new MCPUAssembler()
+
+			// flag if the assembly is automatically assembled
+			let auto_update_output = true
+
+			// parse search string arguments
+			let search_args = {}
+			let search_args_arr = document.location.search.substr(1).split("&").map(e => e.split("=")).map(e => [ decodeURIComponent(e[0]), decodeURIComponent(e[1]) ])
+			search_args_arr.forEach(e => search_args[e[0]] = e[1])
+
+			// register a log function for the assembler
 			assembler.log = function() {
 				console.log(...arguments)
 				for (let i=0; i<arguments.length; i++) {
@@ -103,8 +121,6 @@
 				window.assembler_log_text.innerText += "\n"
 				window.assembler_log_text.scrollTop = window.assembler_log_text.scrollHeight
 			}
-
-			let auto_update_output = true
 
 			// format a hex value
 			let format_hex = (i, bits) => i.toString(16).padStart(Math.ceil(bits/4), "0")
@@ -121,17 +137,31 @@
 				return dump.join("")
 			}
 
-			// read a source file
-			let open_source_file_onchange = () => {
-				if (!confirm("Changes might be lost. Continue?")) { return; }
-				let reader = new FileReader()
-				reader.addEventListener("load", (event) => {
-					window.assembler_source_input.value = event.target.result
-					if (auto_update_output) { update_assembly_output(); }
-				})
-				reader.readAsBinaryString(window.open_source_file.files[0])
+			// 
+			let open_in_emulator_onclick = () => {
+				wm_client.add_window("emulator.html?load_hex_dump=" + encodeURIComponent(assembled_bytes_text.innerText))
 			}
 
+			// load a file from an URL
+			let open_source_from_url = (src_url) => {
+				let xhr = new XMLHttpRequest()
+				xhr.onreadystatechange = function() {
+    				if (xhr.readyState == 4 && xhr.status == 200) {
+						window.assembler_source_input.value = xhr.responseText
+						if (auto_update_output) { update_assembly_output(); }
+					}
+				}
+				xhr.open("GET", src_url, true)
+				xhr.send()
+			}
+
+			// open an example
+			let open_example = (src_url) => {
+				if (!confirm("Changes might be lost. Continue?")) { return; }
+				open_source_from_url(src_url)
+			}
+
+			// Offer a download to a file for the user
 			let save_file_as = (content, filename) => {
 				let a = document.createElement("a")
 				a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content)
@@ -139,18 +169,6 @@
 				document.body.appendChild(a)
 				a.click()
 				document.body.removeChild(a)
-			}
-
-			let save_source_file_onclick = () => {
-				save_file_as(window.assembler_source_input.value, "output.asm")
-			}
-			let save_hex_dump_onclick = () => {
-				save_file_as(window.assembled_bytes_text.innerText, "output.hex")
-			}
-
-			let new_source_file_onclick = () => {
-				if (!confirm("Changes might be lost. Continue?")) { return; }
-				window.assembler_source_input.value = ""
 			}
 
 			// update the assembler output automatically if requested
@@ -163,7 +181,7 @@
 				assembled_bytes_text.innerText = ""
 				window.assembler_log_text.innerText = ""
 				window.assembler_log_text.style.color = "unset"
-				//try {
+				try {
 					let str = assembler_source_input.value
 					let pre_processed = assembler.preprocess_str(str)
 					let tokens = assembler.tokenize_str(pre_processed)
@@ -171,7 +189,6 @@
 					let linked = assembler.link_assembly(assembled)
 					let hex = hex_dump(linked.image, 16, 8)
 					assembled_bytes_text.innerText = hex
-				try {
 				} catch (e) {
 					window.assembler_log_text.style.color = "darkred"
 					window.assembler_log_text.innerText += e
@@ -181,7 +198,27 @@
 				}
 			}
 
-			// edit actions 
+			// file menu options
+			let save_source_file_onclick = () => save_file_as(window.assembler_source_input.value, "output.asm")
+			let save_hex_dump_onclick = () => save_file_as(window.assembled_bytes_text.innerText, "output.hex")
+			let new_source_file_onclick = () => {
+				if (!confirm("Changes might be lost. Continue?")) { return; }
+				window.assembler_source_input.value = ""
+			}
+
+			// file menu: read a source file from user upload
+			let open_source_file_onchange = () => {
+				if (!confirm("Changes might be lost. Continue?")) { return; }
+				let reader = new FileReader()
+				reader.addEventListener("load", (event) => {
+					window.assembler_source_input.value = event.target.result
+					if (auto_update_output) { update_assembly_output(); }
+				})
+				reader.readAsBinaryString(window.open_source_file.files[0])
+			}
+
+			// edit actions
+			// TODO
 			let undo_onclick = () => document.execCommand("undo")
 			let redo_onclick = () => document.execCommand("redo")
 			let cut_onclick = () => document.execCommand("cut")
@@ -190,9 +227,17 @@
 			let assemble_onclick = () => update_assembly_output()
 			let auto_update_checkbox_onchange = () => auto_update_output = window.auto_update_checkbox.checked
 
-			// reset emulator and update UI on load
+			// prepare emulator on load
 			document.body.onload = () => {
 				wm_client.set_size(800, 400)
+				auto_update_output = window.auto_update_checkbox.checked
+				// load source from URL or directly encoded in search string
+				if (search_args.source_url) {
+					open_source_from_url(search_args.source_url)
+				} else if (search_args.source_code) {
+					window.assembler_source_input.value = search_args.source_code
+					if (auto_update_output) { update_assembly_output(); }
+				}
 			}
 
 		</script>
