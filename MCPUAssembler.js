@@ -109,18 +109,18 @@ function MCPUAssembler() {
 				let b_sel_token = consume()
 				let b_sel_name = b_sel_token.token.toUpperCase()
 				if (b_sel_name == "_") { b_sel_name = "B"; }
-				if (!MCPU_alu_b_sel.hasOwnProperty(b_sel_name)) { throw new Error(`Expected ALU B select!\nIn line ${arith_op_token.line_i}: ${arith_op_token.line}`); }
-				let b_sel_i = MCPU_alu_b_sel[b_sel_name]
+				if (!MCPU_alu_op_b_sel.hasOwnProperty(b_sel_name)) { throw new Error(`Expected ALU B select!\nIn line ${arith_op_token.line_i}: ${arith_op_token.line}`); }
+				let b_sel_i = MCPU_alu_op_b_sel[b_sel_name]
 				// parse flags/immediate value
 				let flags = 0
 				let imm_val = 0
 				let flags_token = consume()
 				let flags_str = flags_token.token.toUpperCase()
-				if (flags_str.startsWith("C")) { flags = MCPU_alu_bits.CIN; flags_str = flags_str.substr(1); }
-				else if (flags_str.startsWith("I")) { flags = MCPU_alu_bits.INV; flags_str = flags_str.substr(1); }
-				else if (parseInt(flags_str)) { imm_val = parseInt(flags_str); }
+				if (flags_str.startsWith("C")) { flags = MCPU_alu_op_flag_bits.CIN; flags_str = flags_str.substr(1); }
+				if (flags_str.startsWith("I")) { flags |= MCPU_alu_op_flag_bits.INV; flags_str = flags_str.substr(1); }
+				if (parseInt(flags_str)) { imm_val = parseInt(flags_str); }
 				// emit IMM instructions
-				let alu_op = arith_op_i + b_sel_i<<6 + flags + imm_val<<7
+				let alu_op = arith_op_i + (b_sel_i<<MCPU_alu_op_b_sel_shift) + flags + (imm_val<<7)
 				generate_imm_instructions(alu_op).forEach(e => instructions.push({ byte: e, instr_token: instr_token }))
 			} else if ((instr_name == "MOV") || (instr_name == "CMOV")) {
 				// (conditional) move instruction(push instruction byte)

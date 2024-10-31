@@ -59,6 +59,25 @@ function MCPUEmulator(irom_size, dram_size) {
 		(val) => this.REG_K = val,
 	]
 
+	// disassemble(decode) a single op-code
+	this.disassemble_op = (op) => {
+		let disassembled = {
+			imm: op & MCPU_op_imm_mask,
+			is_imm: op & MCPU_op_imm_bit,
+			is_cond: op & MCPU_op_cond_bit,
+			source_i: op & MCPU_op_source_mask,
+			target_i: (op & MCPU_op_target_mask) >>> MCPU_op_target_shift
+		}
+		if (disassembled.is_imm) {
+			disassembled.instr_name = "IMM 0x" + disassembled.imm.toString(16)
+		} else {
+			let source_name = MCPU_source_id_to_name[disassembled.source_i]
+			let target_name = MCPU_target_id_to_name[disassembled.target_i]
+			disassembled.instr_name = (disassembled.is_cond ? "CMOV " : "MOV ") + source_name + " " + target_name
+		}
+		return disassembled
+	}
+
 	// get ALU extra inputs
 	this.alu_x = () => 0
 	this.alu_y = () => 0
@@ -66,15 +85,17 @@ function MCPUEmulator(irom_size, dram_size) {
 
 	// calculate effective value of ALU B input(REG_ALU_B modified by ALU B operation)
 	this.alu_b = () => {
-		if ((this.SRG_IMM & 0x60) == 0x20) { return this.SRG_IMM >>> 7; }
-		else if ((this.SRG_IMM & 0x60) == 0x40) { return this.REG_ALU_B >>> 1; }
-		else if ((this.SRG_IMM & 0x60) == 0x60) { return ((this.REG_ALU_B << 1) & MCPU_data_mask) >>> 0; }
+		let alu_b_sel = (this.SRG_IMM & MCPU_alu_op_b_sel_mask) >>> MCPU_alu_op_b_sel_shift
+		if ((this.SRG_IMM & MCPU_alu_op_b_sel_mask) == 0x20) { return this.SRG_IMM >>> 7; }
+		else if ((this.SRG_IMM & MCPU_alu_op_b_sel_mask) == 0x40) { return this.REG_ALU_B >>> 1; }
+		else if ((this.SRG_IMM & MCPU_alu_op_b_sel_mask) == 0x60) { return ((this.REG_ALU_B << 1) & MCPU_data_mask) >>> 0; }
 		else { return this.REG_ALU_B; }
 	}
 
 	// get the boolean test output of the ALU
 	this.alu_test = () => {
-		let alu_op = this.SRG_IMM & 0x7
+		let alu_op = this.SRG_IMM & MCPU_alu_op_mask
+		console.log("alu_test", alu_op)
 		if (alu_op==0) { return this.REG_ALU_A == 0; }
 		else if (alu_op==1) { return this.alu_b() == 0; }
 		else if (alu_op==2) { return (this.REG_ALU_A>>>0) > (this.alu_b()>>>0); }
@@ -86,8 +107,8 @@ function MCPUEmulator(irom_size, dram_size) {
 	}
 
 	// get the data output(result) of the ALU
-	this.alu_res = function() {
-		let alu_op = this.SRG_IMM & 0x7
+	this.alu_res = () => {
+		let alu_op = this.SRG_IMM & MCPU_alu_op_mask
 		if (alu_op==0) { return (this.REG_ALU_A + this.alu_b() + ((alu_op & 0x10)>>4)) & MCPU_data_mask; }
 		else if (alu_op==1) { return this.REG_ALU_A & this.alu_b(); }
 		else if (alu_op==2) { return this.REG_ALU_A | this.alu_b(); }
@@ -99,11 +120,11 @@ function MCPUEmulator(irom_size, dram_size) {
 	}
 
 	// execute a single instruction
-	this.step = function() {
+	this.step = () => {
 		let op_addr = this.CNT_PC
 		let op = this.IROM[op_addr] || 0
 		this.CNT_PC = this.CNT_PC + 1
-		this.log(`${op_addr.toString(16)}: ${op.toString(16)}`)
+		this.log(`0x${op_addr.toString(16)}: 0x${op.toString(16)} (${this.disassemble_op(op).instr_name})`)
 		if (op == 0) {
 			// HALT pseudo-instruction
 			this.halted = true
@@ -112,9 +133,9 @@ function MCPUEmulator(irom_size, dram_size) {
 		} else if (op & 0x80) {
 			// IMM instruction
 			if (this.FLAG_LASTIMM) {
-				this.SRG_IMM = (((this.SRG_IMM << 7) | ( op & 0x7f )) & MCPU_data_mask) >>> 0
+				this.SRG_IMM = (((this.SRG_IMM << 7) | ( op & MCPU_op_imm_mask )) & MCPU_data_mask) >>> 0
 			} else {
-				this.SRG_IMM = op & 0x7f
+				this.SRG_IMM = op & MCPU_op_imm_mask
 			}
 			this.FLAG_LASTIMM = true
 		} else {
@@ -130,7 +151,7 @@ function MCPUEmulator(irom_size, dram_size) {
 
 	// run up to step_count instructions as long as the CPU is not halted
 	// return true if the CPU was halted, false if it can run again
-	this.steps = function(step_count) {
+	this.steps = (step_count) => {
 		for (let i=0; i<step_count; i++) {
 			if (this.halted) { return true; }
 			this.step()

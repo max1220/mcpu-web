@@ -7,6 +7,14 @@ var MCPU_imm_stages = Math.ceil(MCPU_data_bits/7) // count of shift register sta
 var MCPU_data_mask = Math.pow(2, MCPU_data_bits)-1 // 0xff...
 var MCPU_data_high = Math.pow(2, MCPU_data_bits-1) // 0x80...
 
+// MCPU operation constants
+var MCPU_op_imm_mask = 0x7f
+var MCPU_op_imm_bit = 0x80
+var MCPU_op_cond_bit = 0x40
+var MCPU_op_source_mask = 0x07
+var MCPU_op_target_mask = 0x38
+var MCPU_op_target_shift = 3
+
 // ALU arithmetic(data) operation names
 var MCPU_alu_ops = {
 	ADD: 0,
@@ -36,12 +44,15 @@ for (let key in MCPU_alu_tests) { MCPU_alu_ops_all[key] = MCPU_alu_tests[key]; }
 
 
 // additional ALU operation bits
-var MCPU_alu_bits = {
+var MCPU_alu_op_mask = 0x07
+var MCPU_alu_op_b_sel_mask = 0x60
+var MCPU_alu_op_b_sel_shift = 5
+var MCPU_alu_op_flag_bits = {
 	INV: 4,
 	CIN: 8,
 }
 // ALU B(pre) operation
-var MCPU_alu_b_sel = {
+var MCPU_alu_op_b_sel = {
 	B: 0,
 	IMM: 1,
 	RSHIFT: 2,
@@ -71,10 +82,14 @@ var MCPU_source_names_short = {
 	J: 6,
 	K: 7,
 }
-// short or long names
+// derived source constants
 var MCPU_source_names_any = {}
+var MCPU_source_id_to_name = {}
 for (let key in MCPU_source_names) { MCPU_source_names_any[key] = MCPU_source_names[key]; }
-for (let key in MCPU_source_names_short) { MCPU_source_names_any[key] = MCPU_source_names_short[key]; }
+for (let key in MCPU_source_names_short) {
+	MCPU_source_names_any[key] = MCPU_source_names_short[key]
+	MCPU_source_id_to_name[MCPU_source_names_short[key]] = key
+}
 
 // map name of targets on the bus to target index
 var MCPU_target_names = {
@@ -101,5 +116,9 @@ var MCPU_target_names_short = {
 }
 // short or long names
 var MCPU_target_names_any = {}
+var MCPU_target_id_to_name = {}
 for (let key in MCPU_target_names) { MCPU_target_names_any[key] = MCPU_target_names[key]; }
-for (let key in MCPU_target_names_short) { MCPU_target_names_any[key] = MCPU_target_names_short[key]; }
+for (let key in MCPU_target_names_short) {
+	MCPU_target_names_any[key] = MCPU_target_names_short[key]
+	MCPU_target_id_to_name[MCPU_target_names_short[key]] = key
+}
