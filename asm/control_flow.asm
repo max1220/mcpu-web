@@ -1,27 +1,47 @@
 # control flow example
+# 
+# This example sets up a ALU comparison from RAM values,
+# and then conditionally jumps(branches) to a target address.
 
-# store value 3 to RAM at address 0x10
-IMOV 0x10 ADDR
+# store value 3 to RAM at address 0xa
+IMOV 0xa ADDR
 IMOV 3 RAM
 
-# store value 2 to RAM at address 0x11
-IMOV 0x11 ADDR
+# store value 2 to RAM at address 0xb
+IMOV 0xb ADDR
 IMOV 2 RAM
 
-# add result of values in RAM at 0x10 and 0x11, store in 0x12
-IMOV 0x10 ADDR
+# load comparison values from RAM at 0xa and 0xb into ALU registers
+IMOV 0xa ADDR
 MOV RAM ALU_A
-IMOV 0x11 ADDR
+IMOV 0xb ADDR
 MOV RAM ALU_B
-IMM_REF DID_BRANCH # Load branch target into REG_ADDR
+
+# load branch target into ADDR
+IMM_REF DID_BRANCH
 MOV IMM ADDR
-ALU A_EQ_B _ _ # setup ALU A == B operation
-CMOV ADDR PC # Conditional jump to DID_BRANCH
+
+# setup ALU A == B operation
+ALU A_EQ_B _ _ 
+
+# conditional jump to DID_BRANCH if ALU operation returns true
+CMOV ADDR PC
+
+# falling through means no branch ocured
 : NO_BRANCH
-IMOV 0xaa I
-IMM_REF END # jump to end
+# store 0xaa in K for debugging
+IMOV 0xaa K
+
+# jump to end
+IMM_REF END
 MOV IMM PC
+
+# this location can only be reached by branching
 : DID_BRANCH
-IMOV 0xbb I
+# store 0xbb in K for debugging
+IMOV 0xbb K
+# falls through to end
+
 : END
-MOV PC PC # HALT instruction
+# HALT instruction
+MOV PC PC 

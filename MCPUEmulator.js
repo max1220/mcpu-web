@@ -59,25 +59,6 @@ function MCPUEmulator(irom_size, dram_size) {
 		(val) => this.REG_K = val,
 	]
 
-	// disassemble(decode) a single op-code
-	this.disassemble_op = (op) => {
-		let disassembled = {
-			imm: op & MCPU_op_imm_mask,
-			is_imm: op & MCPU_op_imm_bit,
-			is_cond: op & MCPU_op_cond_bit,
-			source_i: op & MCPU_op_source_mask,
-			target_i: (op & MCPU_op_target_mask) >>> MCPU_op_target_shift
-		}
-		if (disassembled.is_imm) {
-			disassembled.instr_name = "IMM 0x" + disassembled.imm.toString(16)
-		} else {
-			let source_name = MCPU_source_id_to_name[disassembled.source_i]
-			let target_name = MCPU_target_id_to_name[disassembled.target_i]
-			disassembled.instr_name = (disassembled.is_cond ? "CMOV " : "MOV ") + source_name + " " + target_name
-		}
-		return disassembled
-	}
-
 	// get ALU extra inputs
 	this.alu_x = () => 0
 	this.alu_y = () => 0
@@ -124,7 +105,7 @@ function MCPUEmulator(irom_size, dram_size) {
 		let op_addr = this.CNT_PC
 		let op = this.IROM[op_addr] || 0
 		this.CNT_PC = this.CNT_PC + 1
-		this.log(`0x${op_addr.toString(16)}: 0x${op.toString(16)} (${this.disassemble_op(op).instr_name})`)
+		this.log(`0x${op_addr.toString(16)}: 0x${op.toString(16)} (${disassemble_op(op).instr_name})`)
 		if (op == 0) {
 			// HALT pseudo-instruction
 			this.halted = true

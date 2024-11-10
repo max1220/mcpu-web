@@ -77,6 +77,7 @@
 							<a class="menu-item" onclick="open_example('asm/add.asm')">asm/add.asm</a>
 							<a class="menu-item" onclick="open_example('asm/control_flow.asm')">asm/control_flow.asm</a>
 							<a class="menu-item" onclick="open_example('asm/labels_locations_references.asm')">asm/labels_locations_references.asm</a>
+							<a class="menu-item" onclick="open_example('asm/screen_hello_world.asm')">asm/screen_hello_world.asm.asm</a>
 						</div>
 					</div>
 				</div>
@@ -232,6 +233,11 @@
 				wm_client.set_size(800, 400)
 				auto_update_output = window.auto_update_checkbox.checked
 				// load source from URL or directly encoded in search string
+				if (search_args.minecraft) {
+					let script_node = document.createElement("script")
+					script_node.src = "MCPU_definitions_mc.js"
+					document.body.appendChild(script_node)
+				}
 				if (search_args.source_url) {
 					open_source_from_url(search_args.source_url)
 				} else if (search_args.source_code) {

@@ -122,3 +122,22 @@ for (let key in MCPU_target_names_short) {
 	MCPU_target_names_any[key] = MCPU_target_names_short[key]
 	MCPU_target_id_to_name[MCPU_target_names_short[key]] = key
 }
+
+// disassemble(decode) a single op-code
+function disassemble_op(op) {
+	let disassembled = {
+		imm: op & MCPU_op_imm_mask,
+		is_imm: op & MCPU_op_imm_bit,
+		is_cond: op & MCPU_op_cond_bit,
+		source_i: op & MCPU_op_source_mask,
+		target_i: (op & MCPU_op_target_mask) >>> MCPU_op_target_shift
+	}
+	if (disassembled.is_imm) {
+		disassembled.instr_name = "IMM 0x" + disassembled.imm.toString(16)
+	} else {
+		let source_name = MCPU_source_id_to_name[disassembled.source_i]
+		let target_name = MCPU_target_id_to_name[disassembled.target_i]
+		disassembled.instr_name = (disassembled.is_cond ? "CMOV " : "MOV ") + source_name + " " + target_name
+	}
+	return disassembled
+}
