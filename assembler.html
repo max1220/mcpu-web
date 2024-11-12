@@ -51,6 +51,8 @@
 							<div class="menu-spacer"></div>
 							<a class="menu-item" onclick="save_source_file_onclick()">Save source file...</a>
 							<a class="menu-item" onclick="save_hex_dump_onclick()">Save hex dump...</a>
+							<a class="menu-item" onclick="save_bin_onclick()">Save as binary...</a>
+							<a class="menu-item" onclick="save_json_onclick()">Save as JSON...</a>
 							<div class="menu-spacer"></div>
 							<a class="menu-item" onclick="wm_client.close()">Exit</a>
 						</div>
@@ -165,7 +167,7 @@
 			// Offer a download to a file for the user
 			let save_file_as = (content, filename) => {
 				let a = document.createElement("a")
-				a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content)
+				a.href = window.URL.createObjectURL(new Blob([content], { type: "application/octet-stream" }))
 				a.download = filename
 				document.body.appendChild(a)
 				a.click()
@@ -176,6 +178,8 @@
 			let assembler_source_input_onchange = () => {
 				if (auto_update_output) { update_assembly_output(); }
 			}
+
+			let last_linked = undefined
 
 			// update the assembler output: Pre-process, tokenize, assemble, and link
 			let update_assembly_output = () => {
@@ -189,19 +193,32 @@
 					let assembled = assembler.assemble_tokens(tokens)
 					let linked = assembler.link_assembly(assembled)
 					let hex = hex_dump(linked.image, 16, 8)
+					last_linked = linked
 					assembled_bytes_text.innerText = hex
 				} catch (e) {
 					window.assembler_log_text.style.color = "darkred"
 					window.assembler_log_text.innerText += e
 					window.assembler_log_text.innerText += "\n"
 					window.assembler_log_text.scrollTop = window.assembler_log_text.scrollHeight
+					last_linked = undefined
 					console.error(e)
 				}
 			}
 
 			// file menu options
 			let save_source_file_onclick = () => save_file_as(window.assembler_source_input.value, "output.asm")
-			let save_hex_dump_onclick = () => save_file_as(window.assembled_bytes_text.innerText, "output.hex")
+			let save_hex_dump_onclick = () => {
+				if (!last_linked) { return; }
+				save_file_as(window.assembled_bytes_text.innerText, "output.hex")
+			}
+			let save_bin_onclick = () => {
+				if (!last_linked) { return; }
+				save_file_as(new Uint8Array(last_linked.image).buffer, "output.bin")
+			}
+			let save_json_onclick = () => {
+				if (!last_linked) { return; }
+				save_file_as(JSON.stringify(last_linked), "output.json")
+			}
 			let new_source_file_onclick = () => {
 				if (!confirm("Changes might be lost. Continue?")) { return; }
 				window.assembler_source_input.value = ""
