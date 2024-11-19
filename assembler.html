@@ -5,6 +5,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="stylesheet" href="/window_manager_library/window_inside_common.css">
 		<link rel="stylesheet" id="window_style" href="/window_manager_library/window_inside_98.css">
+		<link rel="icon" type="image/x-icon" href="favicon.ico">
 		<style>
 			#assembler_source_input {
 				padding: 0 0;
@@ -250,11 +251,6 @@
 				wm_client.set_size(800, 400)
 				auto_update_output = window.auto_update_checkbox.checked
 				// load source from URL or directly encoded in search string
-				if (search_args.minecraft) {
-					let script_node = document.createElement("script")
-					script_node.src = "MCPU_definitions_mc.js"
-					document.body.appendChild(script_node)
-				}
 				if (search_args.source_url) {
 					open_source_from_url(search_args.source_url)
 				} else if (search_args.source_code) {

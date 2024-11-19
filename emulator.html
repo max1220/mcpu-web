@@ -5,6 +5,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="stylesheet" href="/window_manager_library/window_inside_common.css">
 		<link rel="stylesheet" id="window_style" href="/window_manager_library/window_inside_98.css">
+		<link rel="icon" type="image/x-icon" href="favicon.ico">
 		<style>
 			.window-content {
 				display: flex;
@@ -63,6 +64,10 @@
 			#serial_panel input {
 				flex-grow: 1;
 			}
+			#pixel_display {
+				width: 100%;
+				outline: 2px solid #eee;
+			}
 		</style>
 		<title>Emulator instance</title>
 	</head>
@@ -83,7 +88,8 @@
 					<button role="tab" aria-controls="tab-panel-state" aria-selected="true" id="tab-btn-state" data-tabgroup="emulator-tabs" onclick="tab_onclick(event)">State</button>
 					<button role="tab" aria-controls="tab-panel-irom" id="tab-btn-irom" data-tabgroup="emulator-tabs" onclick="tab_onclick(event)">IROM</button>
 					<button role="tab" aria-controls="tab-panel-dram" id="tab-btn-dram" data-tabgroup="emulator-tabs" onclick="tab_onclick(event)">DRAM</button>
-					<button role="tab" aria-controls="tab-panel-serial" id="tab-btn-serial" data-tabgroup="emulator-tabs" onclick="tab_onclick(event)">Serial</button>
+					<!--button role="tab" aria-controls="tab-panel-serial" id="tab-btn-serial" data-tabgroup="emulator-tabs" onclick="tab_onclick(event)">Serial</button-->
+					<button class="hidden" role="tab" aria-controls="tab-panel-display" id="tab-btn-display" data-tabgroup="emulator-tabs" onclick="tab_onclick(event)">Display</button>
 				</menu>
 				<div role="tabpanel" aria-labelledby="tab-btn-state" id="tab-panel-state" data-tabgroup="emulator-tabs">
 					<div class="registers">
@@ -112,7 +118,7 @@
 						<textarea id="dram_input" onchange="dram_input_onchange()"></textarea>
 					</div>
 				</div>
-				<div role="tabpanel" aria-labelledby="tab-btn-serial" id="tab-panel-serial" data-tabgroup="emulator-tabs" hidden>
+				<!--div role="tabpanel" aria-labelledby="tab-btn-serial" id="tab-panel-serial" data-tabgroup="emulator-tabs" hidden>
 					<div id="serial_panel">
 						<pre id="serial_text"></pre>
 						<label class="form">
@@ -121,6 +127,9 @@
 							<button class="btn" onclick="serial_send_onclick()">Send</button>
 						</label>
 					</div>
+				</div-->
+				<div role="tabpanel" aria-labelledby="tab-btn-display" id="tab-panel-display" data-tabgroup="emulator-tabs" hidden>
+					<canvas id="pixel_display" width="256" height="128"></canvas>
 				</div>
 			</main>
 		</div>
@@ -134,6 +143,44 @@
 			wm_client.register_message_handler()
 
 			let cpu = new MCPUEmulator(256*256-1,256*256-1)
+
+			window["tab-btn-display"].classList.remove("hidden")
+
+			// add the emulated minecraft display peripheral
+			let buf_len = 64
+			let pixels = undefined
+			let disp_ctx = window.pixel_display.getContext("2d")
+			disp_ctx.scale(4,4)
+			let clear_pixels = () => {
+				pixels = []
+				disp_ctx.fillStyle = "black"
+				disp_ctx.fillRect(0,0,64,32)
+			}
+			clear_pixels()
+			let draw_pixels = () => {
+				console.log("draw_pixels")
+				disp_ctx.fillStyle = "black"
+				disp_ctx.fillRect(0,0,64,32)
+				disp_ctx.fillStyle = "red";
+				for (let x=0; x<64; x++) {
+					let word = pixels[x] || 0
+					for (let y=0; y<32; y++) {
+						if (word & (1<<y)) {
+							disp_ctx.fillRect(x, 31-y, 1,1)
+						}
+					}
+				}
+			}
+			let shift_in_pixel = (val) => {
+				pixels.unshift(val)
+				pixels.length = buf_len
+				draw_pixels()
+			}
+			cpu.targets[7] = (val) => {
+				cpu.REG_K = val
+				shift_in_pixel(val)
+			}
+			
 			let running = false
 
 			// parse search string arguments
@@ -278,6 +325,7 @@
 				window.start_stop_btn.innerText = "Start"
 				running = false
 				cpu.reset()
+				clear_pixels()
 				update_register_ui()
 				update_irom_ui()
 				update_dram_ui()
