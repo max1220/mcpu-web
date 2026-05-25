@@ -48,9 +48,10 @@ var MCPU_alu_op_mask = 0x07
 var MCPU_alu_op_b_sel_mask = 0x60
 var MCPU_alu_op_b_sel_shift = 5
 var MCPU_alu_op_flag_bits = {
-	INV: 4,
-	CIN: 8,
+	NEG: 0x08,
+	CIN: 0x10,
 }
+var MCPU_alu_op_cin_shift = 4;
 // ALU B(pre) operation
 var MCPU_alu_op_b_sel = {
 	B: 0,

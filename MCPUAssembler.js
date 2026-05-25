@@ -117,7 +117,7 @@ function MCPUAssembler() {
 				let flags_token = consume()
 				let flags_str = flags_token.token.toUpperCase()
 				if (flags_str.startsWith("C")) { flags = MCPU_alu_op_flag_bits.CIN; flags_str = flags_str.substr(1); }
-				if (flags_str.startsWith("I")) { flags |= MCPU_alu_op_flag_bits.INV; flags_str = flags_str.substr(1); }
+				if (flags_str.startsWith("N")) { flags |= MCPU_alu_op_flag_bits.NEG; flags_str = flags_str.substr(1); }
 				if (parseInt(flags_str)) { imm_val = parseInt(flags_str); }
 				// emit IMM instructions
 				let alu_op = arith_op_i + (b_sel_i<<MCPU_alu_op_b_sel_shift) + flags + (imm_val<<7)

@@ -90,7 +90,7 @@ function MCPUEmulator(irom_size, dram_size) {
 	// get the data output(result) of the ALU
 	this.alu_res = () => {
 		let alu_op = this.SRG_IMM & MCPU_alu_op_mask
-		if (alu_op==0) { return (this.REG_ALU_A + this.alu_b() + ((alu_op & 0x10)>>4)) & MCPU_data_mask; }
+		if (alu_op==0) { return (this.REG_ALU_A + this.alu_b() + ((alu_op & MCPU_alu_op_flag_bits.CIN)>>MCPU_alu_op_cin_shift)) & MCPU_data_mask; }
 		else if (alu_op==1) { return this.REG_ALU_A & this.alu_b(); }
 		else if (alu_op==2) { return this.REG_ALU_A | this.alu_b(); }
 		else if (alu_op==3) { return this.REG_ALU_A ^ this.alu_b(); }
